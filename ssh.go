@@ -26,7 +26,7 @@ type sshTunnel struct {
 }
 
 // startSSHTunnel opens an SSH tunnel to the target host:port.
-func startSSHTunnel(ctx context.Context, cfg sshConfig, targetHost string, targetPort int) (*sshTunnel, error) {
+func startSSHTunnel(ctx context.Context, cfg SSHConfig, targetHost string, targetPort int) (*sshTunnel, error) {
 	if targetHost == "" || targetPort == 0 {
 		return nil, errors.New("db host/port required for ssh tunneling")
 	}
@@ -109,7 +109,7 @@ func (t *sshTunnel) Close() {
 }
 
 // dialSSH connects to the SSH bastion using the provided config.
-func dialSSH(ctx context.Context, cfg sshConfig) (*ssh.Client, error) {
+func dialSSH(ctx context.Context, cfg SSHConfig) (*ssh.Client, error) {
 	if cfg.Host == "" {
 		return nil, errors.New("ssh host required")
 	}

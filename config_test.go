@@ -6,7 +6,7 @@ import (
 )
 
 func TestBuildDSN(t *testing.T) {
-	cfg := resolvedConfig{
+	cfg := MySQLConfig{
 		Host:     "127.0.0.1",
 		Port:     3306,
 		User:     "root",
@@ -21,7 +21,7 @@ func TestBuildDSN(t *testing.T) {
 }
 
 func TestBuildDSNWithSocketAndTLS(t *testing.T) {
-	cfg := resolvedConfig{
+	cfg := MySQLConfig{
 		User:   "root",
 		Socket: "/tmp/mysql.sock",
 		TLS:    "custom",

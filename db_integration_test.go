@@ -14,7 +14,7 @@ import (
 )
 
 func TestBuildDSNConnect(t *testing.T) {
-	cfg := resolvedConfig{
+	cfg := MySQLConfig{
 		Host:     testEnvOr(t, "MYSQL_TEST_HOST", "127.0.0.1"),
 		Port:     testEnvIntOr(t, "MYSQL_TEST_PORT", 3307),
 		User:     testEnvOr(t, "MYSQL_TEST_USER", "root"),
@@ -35,7 +35,7 @@ func TestBuildDSNConnect(t *testing.T) {
 }
 
 func TestDetectRDS(t *testing.T) {
-	dsn := buildDSN(resolvedConfig{
+	dsn := buildDSN(MySQLConfig{
 		Host:     testEnvOr(t, "MYSQL_TEST_HOST", "127.0.0.1"),
 		Port:     testEnvIntOr(t, "MYSQL_TEST_PORT", 3307),
 		User:     testEnvOr(t, "MYSQL_TEST_USER", "root"),

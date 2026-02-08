@@ -14,14 +14,14 @@ import (
 // runList executes the list command.
 func runList(ctx context.Context, cli *CLI, cmd *ListCmd) error {
 	cfg := resolveConfig(cli)
-	if cfg.DSN == "" {
-		cfg.DSN = buildDSN(cfg)
+	if cfg.MySQL.DSN == "" {
+		cfg.MySQL.DSN = buildDSN(cfg.MySQL)
 	}
-	if cfg.DSN == "" {
+	if cfg.MySQL.DSN == "" {
 		return errors.New("connection info missing: provide MYSQL_DSN or host/user parameters")
 	}
 
-	db, tunnel, err := openDBWithTunnel(ctx, cfg, resolveSSHConfig(cli))
+	db, tunnel, err := openDBWithTunnel(ctx, cfg.MySQL, cfg.SSH)
 	if err != nil {
 		return err
 	}
@@ -32,7 +32,7 @@ func runList(ctx context.Context, cli *CLI, cmd *ListCmd) error {
 		_ = db.Close()
 	}()
 
-	if err := enforceReader(ctx, db, cli.AllowWriter); err != nil {
+	if err := enforceReader(ctx, db, cfg.AllowWriter); err != nil {
 		return err
 	}
 

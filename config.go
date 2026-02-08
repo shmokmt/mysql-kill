@@ -30,8 +30,8 @@ const (
 	envSSHNoStrictHostKey = "SSH_NO_STRICT_HOST_KEY"
 )
 
-// resolvedConfig holds merged connection settings after env/flag resolution.
-type resolvedConfig struct {
+// MySQLConfig holds MySQL connection settings.
+type MySQLConfig struct {
 	DSN      string
 	Host     string
 	Port     int
@@ -42,9 +42,36 @@ type resolvedConfig struct {
 	TLS      string
 }
 
-// resolveConfig merges CLI flags with environment variables for MySQL.
-func resolveConfig(cli *CLI) resolvedConfig {
-	cfg := resolvedConfig{
+// SSHConfig holds SSH tunneling settings.
+type SSHConfig struct {
+	Host            string
+	Port            int
+	User            string
+	KeyPath         string
+	KnownHostsPath  string
+	NoStrictHostKey bool
+	Timeout         time.Duration
+}
+
+// AppConfig holds the resolved settings for the application.
+type AppConfig struct {
+	MySQL       MySQLConfig
+	SSH         SSHConfig
+	AllowWriter bool
+}
+
+// resolveConfig merges CLI flags with environment variables.
+func resolveConfig(cli *CLI) AppConfig {
+	return AppConfig{
+		MySQL:       resolveMySQLConfig(cli),
+		SSH:         resolveSSHConfig(cli),
+		AllowWriter: cli.AllowWriter,
+	}
+}
+
+// resolveMySQLConfig merges CLI flags with environment variables for MySQL.
+func resolveMySQLConfig(cli *CLI) MySQLConfig {
+	cfg := MySQLConfig{
 		DSN:      envOr(envDSN, cli.DSN),
 		Host:     envOr(envHost, cli.Host),
 		User:     envOr(envUser, cli.User),
@@ -76,25 +103,14 @@ func resolveConfig(cli *CLI) resolvedConfig {
 	return cfg
 }
 
-// sshConfig holds SSH tunneling settings.
-type sshConfig struct {
-	Host            string
-	Port            int
-	User            string
-	KeyPath         string
-	KnownHostsPath  string
-	NoStrictHostKey bool
-	Timeout         time.Duration
-}
-
 // Enabled reports whether SSH tunneling is requested.
-func (c sshConfig) Enabled() bool {
+func (c SSHConfig) Enabled() bool {
 	return c.Host != ""
 }
 
 // resolveSSHConfig merges CLI flags with environment variables for SSH.
-func resolveSSHConfig(cli *CLI) sshConfig {
-	cfg := sshConfig{
+func resolveSSHConfig(cli *CLI) SSHConfig {
+	cfg := SSHConfig{
 		Host:            envOr(envSSHHost, cli.SSHHost),
 		User:            envOr(envSSHUser, cli.SSHUser),
 		KeyPath:         envOr(envSSHKey, cli.SSHKey),
@@ -158,8 +174,8 @@ func firstNonEmpty(values ...string) string {
 	return ""
 }
 
-// buildDSN builds a MySQL DSN from resolvedConfig.
-func buildDSN(cfg resolvedConfig) string {
+// buildDSN builds a MySQL DSN from MySQLConfig.
+func buildDSN(cfg MySQLConfig) string {
 	if cfg.User == "" {
 		return ""
 	}

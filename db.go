@@ -17,17 +17,17 @@ type Execer interface {
 }
 
 // openDBWithTunnel opens a DB connection, optionally via SSH tunnel.
-func openDBWithTunnel(ctx context.Context, cfg resolvedConfig, sshCfg sshConfig) (*sql.DB, *sshTunnel, error) {
-	db, err := sql.Open("mysql", cfg.DSN)
+func openDBWithTunnel(ctx context.Context, mysqlCfg MySQLConfig, sshCfg SSHConfig) (*sql.DB, *sshTunnel, error) {
+	db, err := sql.Open("mysql", mysqlCfg.DSN)
 	if err != nil {
 		return nil, nil, fmt.Errorf("open db: %w", err)
 	}
 
 	var tunnel *sshTunnel
 	if sshCfg.Enabled() {
-		targetHost := cfg.Host
-		targetPort := cfg.Port
-		parsed, err := parseDSN(cfg.DSN)
+		targetHost := mysqlCfg.Host
+		targetPort := mysqlCfg.Port
+		parsed, err := parseDSN(mysqlCfg.DSN)
 		if err != nil {
 			_ = db.Close()
 			return nil, nil, err
@@ -63,18 +63,18 @@ func openDBWithTunnel(ctx context.Context, cfg resolvedConfig, sshCfg sshConfig)
 		if parsed != nil {
 			parsed.Net = "tcp"
 			parsed.Addr = localAddr
-			cfg.DSN = parsed.FormatDSN()
+			mysqlCfg.DSN = parsed.FormatDSN()
 		} else {
-			cfg.Host = tunnel.LocalHost
-			cfg.Port = tunnel.LocalPort
-			cfg.DSN = buildDSN(cfg)
+			mysqlCfg.Host = tunnel.LocalHost
+			mysqlCfg.Port = tunnel.LocalPort
+			mysqlCfg.DSN = buildDSN(mysqlCfg)
 		}
 
 		if err := db.Close(); err != nil {
 			tunnel.Close()
 			return nil, nil, fmt.Errorf("close db: %w", err)
 		}
-		db, err = sql.Open("mysql", cfg.DSN)
+		db, err = sql.Open("mysql", mysqlCfg.DSN)
 		if err != nil {
 			tunnel.Close()
 			return nil, nil, fmt.Errorf("open db: %w", err)
