@@ -4,11 +4,10 @@ Kill a MySQL query/connection by process ID with pt-kill-inspired flags.
 
 ## Features
 
-- Single-argument CLI: `mysql-kill <id>`
-- pt-kill-compatible kill flags: `--kill` / `--kill-query`
-- Default `--dry-run` (safe by default)
+ - Subcommands: `kill` and `list`
+ - pt-kill-inspired kill flags: `--kill` / `--kill-query`
 - Auto-detect Amazon RDS / Aurora MySQL and use `mysql.rds_kill*` procedures
-- Environment variables take precedence over flags
+ - Config file > env vars > flags
 - Optional SSH tunnel (bastion) with strict host key checking by default
 
 ## Usage
@@ -139,7 +138,7 @@ export SSH_USER=ec2-user
 export MYSQL_HOST=internal-db.example.com
 export MYSQL_PORT=3306
 
-mysql-kill 123 --kill-query
+mysql-kill kill 123 --kill-query
 ```
 
 Notes:
