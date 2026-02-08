@@ -34,7 +34,7 @@ type KillCmd struct {
 	QueryID   int64 `arg:"" name:"id" help:"MySQL process (query) ID to target."`
 	Kill      bool  `help:"Kill the connection (pt-kill-inspired --kill)."`
 	KillQuery bool  `help:"Kill only the running query (pt-kill-inspired --kill-query)."`
-	DryRun    bool  `help:"Print the SQL/CALL without executing (default: true)." default:"true"`
+	DryRun    bool  `help:"Print the SQL/CALL without executing."`
 }
 
 // ListCmd represents the list subcommand.

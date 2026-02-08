@@ -5,6 +5,7 @@ go 1.24.0
 toolchain go1.24.4
 
 require (
+	github.com/BurntSushi/toml v1.4.0
 	github.com/alecthomas/kong v0.9.0
 	github.com/go-sql-driver/mysql v1.8.1
 	golang.org/x/crypto v0.47.0

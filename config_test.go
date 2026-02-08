@@ -1,6 +1,8 @@
 package mysqlkill
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -89,5 +91,50 @@ func TestResolveSSHConfigEnv(t *testing.T) {
 	}
 	if !cfg.NoStrictHostKey {
 		t.Fatalf("expected NoStrictHostKey true")
+	}
+}
+
+func TestResolveConfigFilePrecedence(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", dir)
+
+	cfgDir := filepath.Join(dir, "mysql-kill")
+	if err := os.MkdirAll(cfgDir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+
+	configPath := filepath.Join(cfgDir, "config.toml")
+	if err := os.WriteFile(configPath, []byte(`
+[mysql-kill]
+allow_writer = true
+
+[mysql]
+host = "file-host"
+
+[ssh]
+host = "file-bastion"
+`), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	t.Setenv("MYSQL_HOST", "env-host")
+	t.Setenv("SSH_HOST", "env-bastion")
+
+	appCfg, err := resolveConfig(&CLI{
+		Host:    "flag-host",
+		SSHHost: "flag-bastion",
+	})
+	if err != nil {
+		t.Fatalf("resolveConfig: %v", err)
+	}
+
+	if appCfg.MySQL.Host != "file-host" {
+		t.Fatalf("mysql host precedence mismatch: %s", appCfg.MySQL.Host)
+	}
+	if appCfg.SSH.Host != "file-bastion" {
+		t.Fatalf("ssh host precedence mismatch: %s", appCfg.SSH.Host)
+	}
+	if !appCfg.AllowWriter {
+		t.Fatalf("expected allow_writer=true from config file")
 	}
 }

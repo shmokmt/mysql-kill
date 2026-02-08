@@ -17,12 +17,13 @@ func runKill(ctx context.Context, cli *CLI, cmd *KillCmd) error {
 	}
 
 	if !cmd.Kill && !cmd.KillQuery {
-		if !cmd.DryRun {
-			return errors.New("no action specified: use --kill or --kill-query, or rely on default --dry-run")
-		}
+		return errors.New("no action specified: use --kill or --kill-query")
 	}
 
-	cfg := resolveConfig(cli)
+	cfg, err := resolveConfig(cli)
+	if err != nil {
+		return err
+	}
 	if cfg.MySQL.DSN == "" {
 		cfg.MySQL.DSN = buildDSN(cfg.MySQL)
 	}
@@ -52,7 +53,7 @@ func runKill(ctx context.Context, cli *CLI, cmd *KillCmd) error {
 
 	sqlText := buildKillSQL(isRDS, cmd.Kill, cmd.KillQuery, cmd.QueryID)
 
-	if cmd.DryRun || (!cmd.Kill && !cmd.KillQuery) {
+	if cmd.DryRun {
 		fmt.Printf("DRY RUN: %s\n", sqlText)
 		return nil
 	}

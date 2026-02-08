@@ -29,8 +29,8 @@ mysql-kill kill 123 --kill-query
 # Allow writer/primary (default is reader-only)
 mysql-kill list --allow-writer
 
-# Show the SQL/CALL to be executed (default behavior)
-mysql-kill kill 123
+# Show the SQL/CALL to be executed
+mysql-kill kill 123 --kill-query --dry-run
 
 # Kill only the running query (standard MySQL or RDS/Aurora detected)
 mysql-kill kill 123 --kill-query
@@ -41,13 +41,21 @@ mysql-kill kill 123 --kill
 # Allow writer/primary (default is reader-only)
 mysql-kill kill 123 --allow-writer --kill-query
 
-# Explicitly enable dry-run (default is true)
-mysql-kill kill 123 --dry-run
+# Explicitly enable dry-run
+mysql-kill kill 123 --kill --dry-run
 ```
 
 ## Connection configuration
 
-Environment variables override flags. If `MYSQL_DSN` is set, it is used as-is.
+Configuration file: `~/.config/mysql-kill/config.toml`
+
+Configuration precedence is:
+
+1. `~/.config/mysql-kill/config.toml`
+2. Environment variables
+3. CLI flags
+
+If `MYSQL_DSN` is set, it takes precedence and other MySQL settings are ignored.
 
 Supported environment variables:
 
@@ -61,6 +69,29 @@ Supported environment variables:
 - `MYSQL_TLS`
 
 Flag equivalents are also available (see `--help`).
+
+### config.toml example
+
+```toml
+[mysql-kill]
+allow_writer = false
+
+[mysql]
+host = "127.0.0.1"
+port = 3306
+user = "root"
+password = "secret"
+db = "testdb"
+tls = "custom"
+
+[ssh]
+host = "bastion.example.com"
+port = 22
+user = "ec2-user"
+key = "~/.ssh/id_rsa"
+known_hosts = "~/.ssh/known_hosts"
+no_strict_host_key = false
+```
 
 ## Auto-detect RDS/Aurora
 
@@ -109,7 +140,7 @@ Notes:
 ## Notes
 
 - `--kill` and `--kill-query` are mutually exclusive.
-- If neither is provided, the command stays in dry-run mode and prints what would be executed.
+- `--kill` or `--kill-query` is required for the kill command.
 - By default, the tool requires the target to be a reader (read-only). Use `--allow-writer` to allow writer/primary connections.
 
 ## Integration tests (Docker)

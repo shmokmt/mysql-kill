@@ -13,7 +13,10 @@ import (
 
 // runList executes the list command.
 func runList(ctx context.Context, cli *CLI, cmd *ListCmd) error {
-	cfg := resolveConfig(cli)
+	cfg, err := resolveConfig(cli)
+	if err != nil {
+		return err
+	}
 	if cfg.MySQL.DSN == "" {
 		cfg.MySQL.DSN = buildDSN(cfg.MySQL)
 	}
