@@ -43,13 +43,14 @@ type ListCmd struct {
 }
 
 // Run executes the selected subcommand.
-func Run(ctx context.Context, cli *CLI, command string) error {
-	switch command {
-	case "kill <id>":
+func Run(ctx context.Context, cli *CLI) error {
+	if cli.Kill != nil {
 		return runKill(ctx, cli, cli.Kill)
-	case "list":
-		return runList(ctx, cli, cli.List)
-	default:
-		return errors.New("command required: use 'kill' or 'list'")
 	}
+
+	if cli.List != nil {
+		return runList(ctx, cli, cli.List)
+	}
+
+	return errors.New("command required: use 'kill' or 'list'")
 }

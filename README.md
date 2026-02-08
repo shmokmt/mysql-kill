@@ -17,8 +17,8 @@ Kill a MySQL query/connection by process ID with pt-kill-inspired flags.
 # List running queries
 mysql-kill list
 
-# List with filters (match is regex)
-mysql-kill list --user app --min-time 10 --match "SELECT"
+# List with regex match
+mysql-kill list --match "SELECT"
 
 # List Redash queries (match query comment regex)
 mysql-kill list --match "/\\* redash"
@@ -53,11 +53,15 @@ go install github.com/shmokmt/mysql-kill/cmd/mysql-kill@latest
 
 ## Connection configuration
 
-Configuration file: `~/.config/mysql-kill/config.toml`
+Configuration file search order:
+
+1. `$XDG_CONFIG_HOME/mysql-kill/config.toml`
+2. `os.UserConfigDir()/mysql-kill/config.toml`
+3. `~/.config/mysql-kill/config.toml`
 
 Configuration precedence is:
 
-1. `~/.config/mysql-kill/config.toml`
+1. Config file (first found by the search order above)
 2. Environment variables
 3. CLI flags
 

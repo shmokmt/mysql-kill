@@ -15,7 +15,7 @@ func main() {
 		kong.Description("Kill a MySQL query/connection by process ID (pt-kill-inspired flags)."),
 	)
 
-	if err := mysqlkill.Run(context.Background(), &cli, ctx.Command()); err != nil {
+	if err := mysqlkill.Run(context.Background(), &cli); err != nil {
 		ctx.Fatalf("%v", err)
 	}
 }
