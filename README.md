@@ -45,6 +45,12 @@ mysql-kill kill 123 --allow-writer --kill-query
 mysql-kill kill 123 --kill --dry-run
 ```
 
+## Install (Go)
+
+```bash
+go install github.com/shmokmt/mysql-kill/cmd/mysql-kill@latest
+```
+
 ## Connection configuration
 
 Configuration file: `~/.config/mysql-kill/config.toml`
