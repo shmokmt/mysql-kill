@@ -192,10 +192,10 @@ func resolveSSHConfig(cli *CLI) SSHConfig {
 
 // fileConfig represents settings loaded from config.toml.
 type fileConfig struct {
-	MySQL       fileMySQLConfig `toml:"mysql"`
-	SSH         fileSSHConfig   `toml:"ssh"`
-	App         fileAppConfig   `toml:"mysql-kill"`
-	AllowWriter *bool           `toml:"allow_writer"`
+	MySQL       fileMySQLConfig     `toml:"mysql"`
+	SSH         fileSSHConfig       `toml:"ssh"`
+	MySQLKill   fileMySQLKillConfig `toml:"mysql-kill"`
+	AllowWriter *bool               `toml:"allow_writer"`
 }
 
 type fileMySQLConfig struct {
@@ -218,7 +218,7 @@ type fileSSHConfig struct {
 	NoStrictHostKey *bool   `toml:"no_strict_host_key"`
 }
 
-type fileAppConfig struct {
+type fileMySQLKillConfig struct {
 	AllowWriter *bool `toml:"allow_writer"`
 }
 
@@ -251,8 +251,8 @@ func applyFileConfig(cfg *AppConfig, fileCfg *fileConfig) {
 	if fileCfg.AllowWriter != nil {
 		cfg.AllowWriter = *fileCfg.AllowWriter
 	}
-	if fileCfg.App.AllowWriter != nil {
-		cfg.AllowWriter = *fileCfg.App.AllowWriter
+	if fileCfg.MySQLKill.AllowWriter != nil {
+		cfg.AllowWriter = *fileCfg.MySQLKill.AllowWriter
 	}
 
 	applyFileMySQLConfig(&cfg.MySQL, fileCfg.MySQL)
