@@ -39,7 +39,7 @@ type KillCmd struct {
 
 // ListCmd represents the list subcommand.
 type ListCmd struct {
-	Match string `help:"Filter by SQL substring (INFO)."`
+	Match string `help:"Filter by SQL regex (INFO)."`
 }
 
 // Run executes the selected subcommand.
