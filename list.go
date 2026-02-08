@@ -93,33 +93,9 @@ func buildProcessListQuery(cmd *ListCmd) (string, []any) {
 	var where []string
 	var args []any
 
-	if cmd.User != "" {
-		where = append(where, "USER = ?")
-		args = append(args, cmd.User)
-	}
-	if cmd.DB != "" {
-		where = append(where, "DB = ?")
-		args = append(args, cmd.DB)
-	}
-	if cmd.Host != "" {
-		where = append(where, "HOST LIKE ?")
-		args = append(args, "%"+cmd.Host+"%")
-	}
-	if cmd.Command != "" {
-		where = append(where, "COMMAND = ?")
-		args = append(args, cmd.Command)
-	}
-	if cmd.State != "" {
-		where = append(where, "STATE LIKE ?")
-		args = append(args, "%"+cmd.State+"%")
-	}
 	if cmd.Match != "" {
 		where = append(where, "INFO REGEXP ?")
 		args = append(args, cmd.Match)
-	}
-	if cmd.MinTime > 0 {
-		where = append(where, "TIME >= ?")
-		args = append(args, cmd.MinTime)
 	}
 
 	query := base
@@ -127,9 +103,6 @@ func buildProcessListQuery(cmd *ListCmd) (string, []any) {
 		query += " WHERE " + strings.Join(where, " AND ")
 	}
 	query += " ORDER BY TIME DESC"
-	if cmd.Limit > 0 {
-		query += fmt.Sprintf(" LIMIT %d", cmd.Limit)
-	}
 
 	return query, args
 }

@@ -77,6 +77,9 @@ func resolveConfig(cli *CLI) (AppConfig, error) {
 		applyFileConfig(&cfg, fileCfg)
 	}
 
+	cfg.SSH.KeyPath = expandTilde(cfg.SSH.KeyPath)
+	cfg.SSH.KnownHostsPath = expandTilde(cfg.SSH.KnownHostsPath)
+
 	return cfg, nil
 }
 
@@ -199,46 +202,57 @@ type fileConfig struct {
 }
 
 type fileMySQLConfig struct {
-	DSN      *string `toml:"dsn"`
-	Host     *string `toml:"host"`
-	Port     *int    `toml:"port"`
-	User     *string `toml:"user"`
-	Password *string `toml:"password"`
-	DB       *string `toml:"db"`
-	Socket   *string `toml:"socket"`
-	TLS      *string `toml:"tls"`
+	DSN      *string     `toml:"dsn"`
+	Host     *string     `toml:"host"`
+	Port     any `toml:"port"`
+	User     *string     `toml:"user"`
+	Password *string     `toml:"password"`
+	DB       *string     `toml:"db"`
+	Socket   *string     `toml:"socket"`
+	TLS      *string     `toml:"tls"`
 }
 
 type fileSSHConfig struct {
-	Host            *string `toml:"host"`
-	Port            *int    `toml:"port"`
-	User            *string `toml:"user"`
-	KeyPath         *string `toml:"key"`
-	KnownHostsPath  *string `toml:"known_hosts"`
-	NoStrictHostKey *bool   `toml:"no_strict_host_key"`
+	Host            *string     `toml:"host"`
+	Port            any `toml:"port"`
+	User            *string     `toml:"user"`
+	KeyPath         *string     `toml:"key"`
+	KnownHostsPath  *string     `toml:"known_hosts"`
+	NoStrictHostKey *bool       `toml:"no_strict_host_key"`
 }
 
 type fileMySQLKillConfig struct {
 	AllowWriter *bool `toml:"allow_writer"`
 }
 
-// loadConfigFile loads ~/.config/mysql-kill/config.toml when present.
+// loadConfigFile loads config.toml from the first found location:
+// 1. $XDG_CONFIG_HOME/mysql-kill/config.toml
+// 2. os.UserConfigDir()/mysql-kill/config.toml (e.g. ~/Library/Application Support on macOS)
+// 3. ~/.config/mysql-kill/config.toml (fallback)
 func loadConfigFile() (*fileConfig, error) {
-	dir := os.Getenv("XDG_CONFIG_HOME")
-	if dir == "" {
-		var err error
-		dir, err = os.UserConfigDir()
-		if err != nil {
-			return nil, err
+	var candidates []string
+
+	if dir := os.Getenv("XDG_CONFIG_HOME"); dir != "" {
+		candidates = append(candidates, filepath.Join(dir, "mysql-kill", "config.toml"))
+	}
+	if dir, err := os.UserConfigDir(); err == nil {
+		candidates = append(candidates, filepath.Join(dir, "mysql-kill", "config.toml"))
+	}
+	if home, err := os.UserHomeDir(); err == nil {
+		candidates = append(candidates, filepath.Join(home, ".config", "mysql-kill", "config.toml"))
+	}
+
+	var path string
+	for _, c := range candidates {
+		if _, err := os.Stat(c); err == nil {
+			path = c
+			break
 		}
 	}
-	path := filepath.Join(dir, "mysql-kill", "config.toml")
-	if _, err := os.Stat(path); err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
-		return nil, err
+	if path == "" {
+		return nil, nil
 	}
+
 	var cfg fileConfig
 	if _, err := toml.DecodeFile(path, &cfg); err != nil {
 		return nil, err
@@ -266,8 +280,8 @@ func applyFileMySQLConfig(cfg *MySQLConfig, fileCfg fileMySQLConfig) {
 	if fileCfg.Host != nil {
 		cfg.Host = *fileCfg.Host
 	}
-	if fileCfg.Port != nil {
-		cfg.Port = *fileCfg.Port
+	if p, ok := toInt(fileCfg.Port); ok {
+		cfg.Port = p
 	}
 	if fileCfg.User != nil {
 		cfg.User = *fileCfg.User
@@ -290,8 +304,8 @@ func applyFileSSHConfig(cfg *SSHConfig, fileCfg fileSSHConfig) {
 	if fileCfg.Host != nil {
 		cfg.Host = *fileCfg.Host
 	}
-	if fileCfg.Port != nil {
-		cfg.Port = *fileCfg.Port
+	if p, ok := toInt(fileCfg.Port); ok {
+		cfg.Port = p
 	}
 	if fileCfg.User != nil {
 		cfg.User = *fileCfg.User
@@ -318,6 +332,41 @@ func envBoolOr(key string, fallback bool) bool {
 		}
 	}
 	return fallback
+}
+
+// toInt converts an any (int64 or string) to int.
+func toInt(v any) (int, bool) {
+	if v == nil {
+		return 0, false
+	}
+	switch val := v.(type) {
+	case int64:
+		return int(val), true
+	case string:
+		if p, err := strconv.Atoi(val); err == nil {
+			return p, true
+		}
+	}
+	return 0, false
+}
+
+// expandTilde replaces a leading "~/" or "~" with the user's home directory.
+func expandTilde(path string) string {
+	if path == "" {
+		return path
+	}
+	if path == "~" {
+		if home, err := os.UserHomeDir(); err == nil {
+			return home
+		}
+		return path
+	}
+	if strings.HasPrefix(path, "~/") {
+		if home, err := os.UserHomeDir(); err == nil {
+			return filepath.Join(home, path[2:])
+		}
+	}
+	return path
 }
 
 // firstNonEmpty returns the first non-empty string in values.

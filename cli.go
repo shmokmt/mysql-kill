@@ -8,11 +8,11 @@ import (
 // CLI defines the top-level command structure for mysql-kill.
 type CLI struct {
 	DSN      string `help:"MySQL DSN (env: MYSQL_DSN)."`
-	Host     string `help:"MySQL host (env: MYSQL_HOST)."`
+	Host     string `name:"mysql-host" help:"MySQL host (env: MYSQL_HOST)."`
 	Port     int    `help:"MySQL port (env: MYSQL_PORT)."`
-	User     string `help:"MySQL user (env: MYSQL_USER)."`
+	User     string `name:"mysql-user" help:"MySQL user (env: MYSQL_USER)."`
 	Password string `help:"MySQL password (env: MYSQL_PASSWORD)."`
-	DB       string `help:"MySQL database (env: MYSQL_DB)."`
+	DB       string `name:"mysql-db" help:"MySQL database (env: MYSQL_DB)."`
 	Socket   string `help:"MySQL unix socket (env: MYSQL_SOCKET)."`
 	TLS      string `help:"MySQL TLS config name (env: MYSQL_TLS)."`
 
@@ -39,25 +39,17 @@ type KillCmd struct {
 
 // ListCmd represents the list subcommand.
 type ListCmd struct {
-	User    string `help:"Filter by user."`
-	DB      string `help:"Filter by database."`
-	Host    string `help:"Filter by host (substring match)."`
-	Command string `help:"Filter by command (e.g. Query, Sleep)."`
-	State   string `help:"Filter by state (substring match)."`
-	Match   string `help:"Filter by SQL substring (INFO)."`
-	MinTime int    `help:"Filter by minimum execution time (seconds)."`
-	Limit   int    `help:"Limit rows (default: 100)." default:"100"`
+	Match string `help:"Filter by SQL substring (INFO)."`
 }
 
 // Run executes the selected subcommand.
-func Run(ctx context.Context, cli *CLI) error {
-	if cli.Kill != nil {
+func Run(ctx context.Context, cli *CLI, command string) error {
+	switch command {
+	case "kill <id>":
 		return runKill(ctx, cli, cli.Kill)
-	}
-
-	if cli.List != nil {
+	case "list":
 		return runList(ctx, cli, cli.List)
+	default:
+		return errors.New("command required: use 'kill' or 'list'")
 	}
-
-	return errors.New("command required: use 'kill' or 'list'")
 }
