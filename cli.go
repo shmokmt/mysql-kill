@@ -3,6 +3,8 @@ package mysqlkill
 import (
 	"context"
 	"errors"
+
+	"github.com/alecthomas/kong"
 )
 
 // CLI defines the top-level command structure for mysql-kill.
@@ -24,6 +26,8 @@ type CLI struct {
 	SSHNoStrictHostKey bool   `help:"Disable strict host key checking (env: SSH_NO_STRICT_HOST_KEY)."`
 
 	AllowWriter bool `help:"Allow connecting to writer/primary (default: reader only)."`
+
+	Version kong.VersionFlag `name:"version" help:"Print version information and quit."`
 
 	Kill *KillCmd `cmd:"" help:"Kill a query or connection by process ID."`
 	List *ListCmd `cmd:"" help:"List running queries (from processlist)."`

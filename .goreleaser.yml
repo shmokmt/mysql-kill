@@ -5,6 +5,8 @@ project_name: mysql-kill
 builds:
   - main: ./cmd/mysql-kill
     binary: mysql-kill
+    ldflags:
+      - -s -w -X main.version={{.Version}}
     env:
       - CGO_ENABLED=0
     goos:
