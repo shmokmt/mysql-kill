@@ -53,7 +53,9 @@ func listProcess(ctx context.Context, db *sql.DB, cmd *ListCmd) error {
 	defer func() { _ = rows.Close() }()
 
 	tw := tabwriter.NewWriter(os.Stdout, 2, 4, 2, ' ', 0)
-	fmt.Fprintln(tw, "ID\tUSER\tHOST\tDB\tCOMMAND\tTIME\tSTATE\tINFO")
+	if _, err := fmt.Fprintln(tw, "ID\tUSER\tHOST\tDB\tCOMMAND\tTIME\tSTATE\tINFO"); err != nil {
+		return fmt.Errorf("write header: %w", err)
+	}
 
 	for rows.Next() {
 		var (
@@ -69,7 +71,7 @@ func listProcess(ctx context.Context, db *sql.DB, cmd *ListCmd) error {
 		if err := rows.Scan(&id, &user, &host, &db, &command, &timeSec, &state, &info); err != nil {
 			return fmt.Errorf("scan processlist: %w", err)
 		}
-		fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+		if _, err := fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
 			id,
 			nullString(user),
 			nullString(host),
@@ -78,7 +80,9 @@ func listProcess(ctx context.Context, db *sql.DB, cmd *ListCmd) error {
 			nullInt(timeSec),
 			nullString(state),
 			nullString(info),
-		)
+		); err != nil {
+			return fmt.Errorf("write row: %w", err)
+		}
 	}
 	if err := rows.Err(); err != nil {
 		return fmt.Errorf("rows: %w", err)
