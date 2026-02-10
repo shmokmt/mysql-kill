@@ -2,7 +2,8 @@ package mysqlkill
 
 import (
 	"context"
-	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/alecthomas/kong"
 )
@@ -47,14 +48,13 @@ type ListCmd struct {
 }
 
 // Run executes the selected subcommand.
-func Run(ctx context.Context, cli *CLI) error {
-	if cli.Kill != nil {
+func Run(ctx context.Context, cli *CLI, command string) error {
+	switch {
+	case strings.HasPrefix(command, "kill"):
 		return runKill(ctx, cli, cli.Kill)
-	}
-
-	if cli.List != nil {
+	case command == "list":
 		return runList(ctx, cli, cli.List)
+	default:
+		return fmt.Errorf("unknown command: %s", command)
 	}
-
-	return errors.New("command required: use 'kill' or 'list'")
 }
