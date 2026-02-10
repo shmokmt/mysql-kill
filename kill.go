@@ -20,7 +20,7 @@ func runKill(ctx context.Context, cli *CLI, cmd *KillCmd) error {
 		return errors.New("no action specified: use --kill or --kill-query")
 	}
 
-	cfg, err := resolveConfig(cli)
+	cfg, err := resolveConfig(ctx, cli)
 	if err != nil {
 		return err
 	}

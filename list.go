@@ -13,7 +13,7 @@ import (
 
 // runList executes the list command.
 func runList(ctx context.Context, cli *CLI, cmd *ListCmd) error {
-	cfg, err := resolveConfig(cli)
+	cfg, err := resolveConfig(ctx, cli)
 	if err != nil {
 		return err
 	}

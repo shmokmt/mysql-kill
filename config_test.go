@@ -1,6 +1,7 @@
 package mysqlkill
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -120,7 +121,7 @@ host = "file-bastion"
 	t.Setenv("MYSQL_HOST", "env-host")
 	t.Setenv("SSH_HOST", "env-bastion")
 
-	appCfg, err := resolveConfig(&CLI{
+	appCfg, err := resolveConfig(context.Background(), &CLI{
 		Host:    "flag-host",
 		SSHHost: "flag-bastion",
 	})
