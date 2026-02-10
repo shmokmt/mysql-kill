@@ -6,7 +6,7 @@ builds:
   - main: ./cmd/mysql-kill
     binary: mysql-kill
     ldflags:
-      - -s -w -X main.version={{.Version}}
+      - -s -w
     env:
       - CGO_ENABLED=0
     goos:

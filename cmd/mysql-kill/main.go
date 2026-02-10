@@ -9,17 +9,20 @@ import (
 	"github.com/shmokmt/mysql-kill"
 )
 
-// version is set at build time via ldflags.
-var version = "dev"
-
-func init() {
-	if version != "dev" {
-		return
-	}
+func getVersion() string {
 	info, ok := debug.ReadBuildInfo()
-	if ok && info.Main.Version != "" && info.Main.Version != "(devel)" {
-		version = info.Main.Version
+	if !ok {
+		return "dev"
 	}
+	if v := info.Main.Version; v != "" && v != "(devel)" {
+		return v
+	}
+	for _, s := range info.Settings {
+		if s.Key == "vcs.tag" {
+			return s.Value
+		}
+	}
+	return "dev"
 }
 
 // main parses arguments and runs the CLI.
@@ -33,7 +36,7 @@ func main() {
 	kongCtx := kong.Parse(&cli,
 		kong.Name("mysql-kill"),
 		kong.Description("Kill a MySQL query/connection by process ID (pt-kill-inspired flags)."),
-		kong.Vars{"version": version},
+		kong.Vars{"version": getVersion()},
 	)
 
 	if err := mysqlkill.Run(context.Background(), &cli, kongCtx.Command()); err != nil {
