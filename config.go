@@ -1,6 +1,7 @@
 package mysqlkill
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -62,7 +63,7 @@ type AppConfig struct {
 }
 
 // resolveConfig merges CLI flags with environment variables.
-func resolveConfig(cli *CLI) (AppConfig, error) {
+func resolveConfig(ctx context.Context, cli *CLI) (AppConfig, error) {
 	cfg := AppConfig{
 		MySQL:       resolveMySQLConfig(cli),
 		SSH:         resolveSSHConfig(cli),
@@ -79,6 +80,12 @@ func resolveConfig(cli *CLI) (AppConfig, error) {
 
 	cfg.SSH.KeyPath = expandTilde(cfg.SSH.KeyPath)
 	cfg.SSH.KnownHostsPath = expandTilde(cfg.SSH.KnownHostsPath)
+
+	resolved, err := resolvePassword(ctx, cfg.MySQL.Password)
+	if err != nil {
+		return cfg, fmt.Errorf("resolve password: %w", err)
+	}
+	cfg.MySQL.Password = resolved
 
 	return cfg, nil
 }
