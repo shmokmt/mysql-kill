@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.1.3](https://github.com/shmokmt/mysql-kill/compare/v0.1.2...v0.1.3) - 2026-02-11
+- Add AWS Secrets Manager support for password resolution by @shmokmt in https://github.com/shmokmt/mysql-kill/pull/17
+- Show help when no arguments are given by @shmokmt in https://github.com/shmokmt/mysql-kill/pull/19
+- Simplify configuration: remove env vars, use TOML config file + minimal CLI flags by @shmokmt in https://github.com/shmokmt/mysql-kill/pull/20
+
 ## [v0.1.2](https://github.com/shmokmt/mysql-kill/compare/v0.1.1...v0.1.2) - 2026-02-10
 - Add CLAUDE.md with codebase documentation for AI assistants by @shmokmt in https://github.com/shmokmt/mysql-kill/pull/12
 - Add golangci-lint GitHub Actions workflow by @shmokmt in https://github.com/shmokmt/mysql-kill/pull/11
