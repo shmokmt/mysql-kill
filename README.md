@@ -7,7 +7,7 @@ Kill a MySQL query/connection by process ID with pt-kill-inspired flags.
  - Subcommands: `kill` and `list`
  - pt-kill-inspired kill flags: `--kill` / `--kill-query`
 - Auto-detect Amazon RDS / Aurora MySQL and use `mysql.rds_kill*` procedures
- - Config file > env vars > flags
+- Config file (TOML) with minimal CLI flags
 - Optional SSH tunnel (bastion) with strict host key checking by default
 
 ## Usage
@@ -42,6 +42,12 @@ mysql-kill kill 123 --allow-writer --kill-query
 
 # Explicitly enable dry-run
 mysql-kill kill 123 --kill --dry-run
+
+# Use a specific config file
+mysql-kill -c ~/.config/mysql-kill/staging.toml list
+
+# One-shot connection via DSN (overrides config file)
+mysql-kill --dsn "user:pass@tcp(host:3306)/db" list
 ```
 
 ## Install (Go)
@@ -52,32 +58,26 @@ go install github.com/shmokmt/mysql-kill/cmd/mysql-kill@latest
 
 ## Connection configuration
 
-Configuration file search order:
+All connection settings are managed via a TOML config file. CLI flags are limited to:
+
+| Flag | Description |
+|------|-------------|
+| `--dsn` | MySQL DSN (overrides config file) |
+| `--allow-writer` | Allow connecting to writer/primary |
+| `-c`, `--config` | Path to config file |
+
+### Config file search order
+
+If `--config` is not specified, the first found file is used:
 
 1. `$XDG_CONFIG_HOME/mysql-kill/config.toml`
 2. `os.UserConfigDir()/mysql-kill/config.toml`
 3. `~/.config/mysql-kill/config.toml`
 
-Configuration precedence is:
+### Configuration precedence
 
-1. Config file (first found by the search order above)
-2. Environment variables
-3. CLI flags
-
-If `MYSQL_DSN` is set, it takes precedence and other MySQL settings are ignored.
-
-Supported environment variables:
-
-- `MYSQL_DSN`
-- `MYSQL_HOST` (default: `127.0.0.1`)
-- `MYSQL_PORT` (default: `3306`)
-- `MYSQL_USER` (default: `root`)
-- `MYSQL_PASSWORD`
-- `MYSQL_DB`
-- `MYSQL_SOCKET`
-- `MYSQL_TLS`
-
-Flag equivalents are also available (see `--help`).
+1. CLI flags (`--dsn`, `--allow-writer`)
+2. Config file
 
 ### config.toml example
 
@@ -118,32 +118,25 @@ If auto-detection fails, the command exits with an error instead of falling back
 
 ## SSH tunnel (bastion)
 
-If `SSH_HOST` (or `--ssh-host`) is provided, the tool opens a local SSH tunnel and connects to the target DB host/port through it.
+If `ssh.host` is set in the config file, the tool opens a local SSH tunnel and connects to the target DB host/port through it.
 Strict host key checking is enabled by default.
 
-Supported environment variables:
+Example config:
 
-- `SSH_HOST`
-- `SSH_PORT` (default: `22`)
-- `SSH_USER` (default: `$USER`)
-- `SSH_KEY` (private key path)
-- `SSH_KNOWN_HOSTS` (default: `~/.ssh/known_hosts`)
-- `SSH_NO_STRICT_HOST_KEY` (set to `true` to disable strict checking)
+```toml
+[mysql]
+host = "internal-db.example.com"
+port = 3306
 
-Example:
-
-```bash
-export SSH_HOST=bastion.example.com
-export SSH_USER=ec2-user
-export MYSQL_HOST=internal-db.example.com
-export MYSQL_PORT=3306
-
-mysql-kill kill 123 --kill-query
+[ssh]
+host = "bastion.example.com"
+user = "ec2-user"
+key = "~/.ssh/id_rsa"
 ```
 
 Notes:
 
-- The DB host/port are still configured via `MYSQL_HOST`/`MYSQL_PORT` (or flags), even when tunneling.
+- The DB host/port are configured via `[mysql]` section, even when tunneling.
 - `--dry-run` still connects in order to auto-detect RDS/Aurora, so the SSH tunnel will be used.
 
 ## Notes
