@@ -10,23 +10,9 @@ import (
 
 // CLI defines the top-level command structure for mysql-kill.
 type CLI struct {
-	DSN      string `help:"MySQL DSN (env: MYSQL_DSN)."`
-	Host     string `name:"mysql-host" help:"MySQL host (env: MYSQL_HOST)."`
-	Port     int    `help:"MySQL port (env: MYSQL_PORT)."`
-	User     string `name:"mysql-user" help:"MySQL user (env: MYSQL_USER)."`
-	Password string `help:"MySQL password (env: MYSQL_PASSWORD)."`
-	DB       string `name:"mysql-db" help:"MySQL database (env: MYSQL_DB)."`
-	Socket   string `help:"MySQL unix socket (env: MYSQL_SOCKET)."`
-	TLS      string `help:"MySQL TLS config name (env: MYSQL_TLS)."`
-
-	SSHHost            string `help:"SSH bastion host (env: SSH_HOST)."`
-	SSHPort            int    `help:"SSH bastion port (env: SSH_PORT)."`
-	SSHUser            string `help:"SSH bastion user (env: SSH_USER)."`
-	SSHKey             string `help:"SSH private key file path (env: SSH_KEY)."`
-	SSHKnownHosts      string `help:"known_hosts path for strict checking (env: SSH_KNOWN_HOSTS)."`
-	SSHNoStrictHostKey bool   `help:"Disable strict host key checking (env: SSH_NO_STRICT_HOST_KEY)."`
-
-	AllowWriter bool `help:"Allow connecting to writer/primary (default: reader only)."`
+	DSN         string `help:"MySQL DSN (overrides config file)."`
+	AllowWriter bool   `help:"Allow connecting to writer/primary (default: reader only)."`
+	Config      string `short:"c" help:"Path to config file (default: auto-detect)."`
 
 	Version kong.VersionFlag `name:"version" help:"Print version information and quit."`
 

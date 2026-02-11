@@ -28,7 +28,7 @@ func runKill(ctx context.Context, cli *CLI, cmd *KillCmd) error {
 		cfg.MySQL.DSN = buildDSN(cfg.MySQL)
 	}
 	if cfg.MySQL.DSN == "" {
-		return errors.New("connection info missing: provide MYSQL_DSN or host/user parameters")
+		return errors.New("connection info missing: provide --dsn flag or config file")
 	}
 
 	db, tunnel, err := openDBWithTunnel(ctx, cfg.MySQL, cfg.SSH)

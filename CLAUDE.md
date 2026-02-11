@@ -14,7 +14,7 @@
 ```
 cmd/mysql-kill/main.go   # Binary entry point: parses args, calls mysqlkill.Run()
 cli.go                   # CLI struct definitions (Kong framework)
-config.go                # Multi-source config resolution (file > env > flags)
+config.go                # Config resolution (TOML file + CLI flags)
 db.go                    # Database connection, RDS/Aurora detection, reader/writer checks
 kill.go                  # Kill command implementation (standard & RDS)
 list.go                  # List command (PROCESSLIST query with regex filtering)
@@ -65,9 +65,8 @@ Integration tests use build tag `//go:build integration` and connect to MySQL on
 
 ### Configuration precedence
 
-1. Config file (TOML, searched in XDG_CONFIG_HOME → os.UserConfigDir → ~/.config)
-2. Environment variables (`MYSQL_DSN` overrides all other MySQL settings)
-3. CLI flags
+1. CLI flags (`--dsn`, `--allow-writer`) override config file
+2. Config file (TOML, searched in XDG_CONFIG_HOME → os.UserConfigDir → ~/.config, or specified via `--config`)
 
 ### RDS/Aurora detection
 

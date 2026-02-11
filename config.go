@@ -13,25 +13,6 @@ import (
 	"github.com/go-sql-driver/mysql"
 )
 
-// Environment variable names for MySQL and SSH configuration.
-const (
-	envDSN      = "MYSQL_DSN"
-	envHost     = "MYSQL_HOST"
-	envPort     = "MYSQL_PORT"
-	envUser     = "MYSQL_USER"
-	envPassword = "MYSQL_PASSWORD"
-	envDB       = "MYSQL_DB"
-	envSocket   = "MYSQL_SOCKET"
-	envTLS      = "MYSQL_TLS"
-
-	envSSHHost            = "SSH_HOST"
-	envSSHPort            = "SSH_PORT"
-	envSSHUser            = "SSH_USER"
-	envSSHKey             = "SSH_KEY"
-	envSSHKnownHosts      = "SSH_KNOWN_HOSTS"
-	envSSHNoStrictHostKey = "SSH_NO_STRICT_HOST_KEY"
-)
-
 // MySQLConfig holds MySQL connection settings.
 type MySQLConfig struct {
 	DSN      string
@@ -50,7 +31,7 @@ type SSHConfig struct {
 	Port            int
 	User            string
 	KeyPath         string
-	KnownHostsPath  string
+	KnownHostsPath string
 	NoStrictHostKey bool
 	Timeout         time.Duration
 }
@@ -62,20 +43,44 @@ type AppConfig struct {
 	AllowWriter bool
 }
 
-// resolveConfig merges CLI flags with environment variables.
+// resolveConfig builds the application config from TOML file and CLI flags.
+// Precedence: CLI flags > config file > defaults.
 func resolveConfig(ctx context.Context, cli *CLI) (AppConfig, error) {
 	cfg := AppConfig{
-		MySQL:       resolveMySQLConfig(cli),
-		SSH:         resolveSSHConfig(cli),
-		AllowWriter: cli.AllowWriter,
+		MySQL: MySQLConfig{
+			Host: "127.0.0.1",
+			Port: 3306,
+			User: "root",
+		},
+		SSH: SSHConfig{
+			Port:    22,
+			Timeout: 10 * time.Second,
+		},
 	}
 
-	fileCfg, err := loadConfigFile()
+	// Set default SSH user from OS.
+	cfg.SSH.User = firstNonEmpty(os.Getenv("USER"), os.Getenv("USERNAME"))
+
+	// Set default known_hosts path.
+	if home, err := os.UserHomeDir(); err == nil {
+		cfg.SSH.KnownHostsPath = filepath.Join(home, ".ssh", "known_hosts")
+	}
+
+	// Load config file (overrides defaults).
+	fileCfg, err := loadConfigFile(cli.Config)
 	if err != nil {
 		return cfg, err
 	}
 	if fileCfg != nil {
 		applyFileConfig(&cfg, fileCfg)
+	}
+
+	// CLI flags override config file.
+	if cli.DSN != "" {
+		cfg.MySQL.DSN = cli.DSN
+	}
+	if cli.AllowWriter {
+		cfg.AllowWriter = true
 	}
 
 	cfg.SSH.KeyPath = expandTilde(cfg.SSH.KeyPath)
@@ -90,153 +95,56 @@ func resolveConfig(ctx context.Context, cli *CLI) (AppConfig, error) {
 	return cfg, nil
 }
 
-// resolveMySQLConfig merges CLI flags with environment variables for MySQL.
-func resolveMySQLConfig(cli *CLI) MySQLConfig {
-	cfg := MySQLConfig{
-		DSN:      cli.DSN,
-		Host:     cli.Host,
-		Port:     cli.Port,
-		User:     cli.User,
-		Password: cli.Password,
-		DB:       cli.DB,
-		Socket:   cli.Socket,
-		TLS:      cli.TLS,
-	}
-
-	if v := os.Getenv(envDSN); v != "" {
-		cfg.DSN = v
-	}
-	if v := os.Getenv(envHost); v != "" {
-		cfg.Host = v
-	}
-	if v := os.Getenv(envUser); v != "" {
-		cfg.User = v
-	}
-	if v := os.Getenv(envPassword); v != "" {
-		cfg.Password = v
-	}
-	if v := os.Getenv(envDB); v != "" {
-		cfg.DB = v
-	}
-	if v := os.Getenv(envSocket); v != "" {
-		cfg.Socket = v
-	}
-	if v := os.Getenv(envTLS); v != "" {
-		cfg.TLS = v
-	}
-
-	if cfg.Host == "" {
-		cfg.Host = "127.0.0.1"
-	}
-
-	portStr := os.Getenv(envPort)
-	if portStr != "" {
-		if p, err := strconv.Atoi(portStr); err == nil {
-			cfg.Port = p
-		}
-	}
-	if cfg.Port == 0 {
-		cfg.Port = 3306
-	}
-
-	if cfg.User == "" {
-		cfg.User = "root"
-	}
-
-	return cfg
-}
-
 // Enabled reports whether SSH tunneling is requested.
 func (c SSHConfig) Enabled() bool {
 	return c.Host != ""
 }
 
-// resolveSSHConfig merges CLI flags with environment variables for SSH.
-func resolveSSHConfig(cli *CLI) SSHConfig {
-	cfg := SSHConfig{
-		Host:            cli.SSHHost,
-		Port:            cli.SSHPort,
-		User:            cli.SSHUser,
-		KeyPath:         cli.SSHKey,
-		KnownHostsPath:  cli.SSHKnownHosts,
-		NoStrictHostKey: cli.SSHNoStrictHostKey,
-		Timeout:         10 * time.Second,
-	}
-
-	if v := os.Getenv(envSSHHost); v != "" {
-		cfg.Host = v
-	}
-	if v := os.Getenv(envSSHUser); v != "" {
-		cfg.User = v
-	}
-	if v := os.Getenv(envSSHKey); v != "" {
-		cfg.KeyPath = v
-	}
-	if v := os.Getenv(envSSHKnownHosts); v != "" {
-		cfg.KnownHostsPath = v
-	}
-	cfg.NoStrictHostKey = envBoolOr(envSSHNoStrictHostKey, cfg.NoStrictHostKey)
-
-	if cfg.User == "" {
-		cfg.User = firstNonEmpty(os.Getenv("USER"), os.Getenv("USERNAME"))
-	}
-
-	portStr := os.Getenv(envSSHPort)
-	if portStr != "" {
-		if p, err := strconv.Atoi(portStr); err == nil {
-			cfg.Port = p
-		}
-	}
-	if cfg.Port == 0 {
-		cfg.Port = 22
-	}
-
-	if cfg.KnownHostsPath == "" {
-		if home, err := os.UserHomeDir(); err == nil {
-			cfg.KnownHostsPath = filepath.Join(home, ".ssh", "known_hosts")
-		}
-	}
-
-	return cfg
-}
-
 // fileConfig represents settings loaded from config.toml.
 type fileConfig struct {
-	MySQL       fileMySQLConfig     `toml:"mysql"`
-	SSH         fileSSHConfig       `toml:"ssh"`
-	MySQLKill   fileMySQLKillConfig `toml:"mysql-kill"`
-	AllowWriter *bool               `toml:"allow_writer"`
+	MySQL     fileMySQLConfig     `toml:"mysql"`
+	SSH       fileSSHConfig       `toml:"ssh"`
+	MySQLKill fileMySQLKillConfig `toml:"mysql-kill"`
 }
 
 type fileMySQLConfig struct {
-	DSN      *string     `toml:"dsn"`
-	Host     *string     `toml:"host"`
-	Port     any `toml:"port"`
-	User     *string     `toml:"user"`
-	Password *string     `toml:"password"`
-	DB       *string     `toml:"db"`
-	Socket   *string     `toml:"socket"`
-	TLS      *string     `toml:"tls"`
+	DSN      *string `toml:"dsn"`
+	Host     *string `toml:"host"`
+	Port     any     `toml:"port"`
+	User     *string `toml:"user"`
+	Password *string `toml:"password"`
+	DB       *string `toml:"db"`
+	Socket   *string `toml:"socket"`
+	TLS      *string `toml:"tls"`
 }
 
 type fileSSHConfig struct {
-	Host            *string     `toml:"host"`
-	Port            any `toml:"port"`
-	User            *string     `toml:"user"`
-	KeyPath         *string     `toml:"key"`
-	KnownHostsPath  *string     `toml:"known_hosts"`
-	NoStrictHostKey *bool       `toml:"no_strict_host_key"`
+	Host            *string `toml:"host"`
+	Port            any     `toml:"port"`
+	User            *string `toml:"user"`
+	KeyPath         *string `toml:"key"`
+	KnownHostsPath  *string `toml:"known_hosts"`
+	NoStrictHostKey *bool   `toml:"no_strict_host_key"`
 }
 
 type fileMySQLKillConfig struct {
 	AllowWriter *bool `toml:"allow_writer"`
 }
 
-// loadConfigFile loads config.toml from the first found location:
+// loadConfigFile loads config.toml from the specified path, or from the
+// first found default location:
 // 1. $XDG_CONFIG_HOME/mysql-kill/config.toml
-// 2. os.UserConfigDir()/mysql-kill/config.toml (e.g. ~/Library/Application Support on macOS)
-// 3. ~/.config/mysql-kill/config.toml (fallback)
-func loadConfigFile() (*fileConfig, error) {
+// 2. os.UserConfigDir()/mysql-kill/config.toml
+// 3. ~/.config/mysql-kill/config.toml
+func loadConfigFile(configPath string) (*fileConfig, error) {
+	if configPath != "" {
+		var cfg fileConfig
+		if _, err := toml.DecodeFile(configPath, &cfg); err != nil {
+			return nil, fmt.Errorf("load config file %s: %w", configPath, err)
+		}
+		return &cfg, nil
+	}
+
 	var candidates []string
 
 	if dir := os.Getenv("XDG_CONFIG_HOME"); dir != "" {
@@ -269,9 +177,6 @@ func loadConfigFile() (*fileConfig, error) {
 
 // applyFileConfig overrides config with values from file.
 func applyFileConfig(cfg *AppConfig, fileCfg *fileConfig) {
-	if fileCfg.AllowWriter != nil {
-		cfg.AllowWriter = *fileCfg.AllowWriter
-	}
 	if fileCfg.MySQLKill.AllowWriter != nil {
 		cfg.AllowWriter = *fileCfg.MySQLKill.AllowWriter
 	}
@@ -326,19 +231,6 @@ func applyFileSSHConfig(cfg *SSHConfig, fileCfg fileSSHConfig) {
 	if fileCfg.NoStrictHostKey != nil {
 		cfg.NoStrictHostKey = *fileCfg.NoStrictHostKey
 	}
-}
-
-// envBoolOr parses a boolean env var or returns fallback.
-func envBoolOr(key string, fallback bool) bool {
-	if v := os.Getenv(key); v != "" {
-		switch strings.ToLower(v) {
-		case "1", "true", "yes", "y", "on":
-			return true
-		case "0", "false", "no", "n", "off":
-			return false
-		}
-	}
-	return fallback
 }
 
 // toInt converts an any (int64 or string) to int.
