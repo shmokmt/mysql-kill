@@ -6,7 +6,7 @@ toolchain go1.24.4
 
 require (
 	github.com/BurntSushi/toml v1.6.0
-	github.com/alecthomas/kong v1.14.0
+	github.com/alecthomas/kong v1.15.0
 	github.com/aws/aws-sdk-go-v2/config v1.32.7
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.41.1
 	github.com/go-sql-driver/mysql v1.9.3
